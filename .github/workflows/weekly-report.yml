@@ -47,7 +47,7 @@ jobs:
           lead_times = []
 
           for dep in deployments:
-              if dep["environment"] != "production":
+              if dep["environment"].lower() != "production":
                   continue
 
               statuses = api(
