@@ -1,0 +1,17 @@
+name: Health Check
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Service
+        run: |
+          if ! curl -f https://myapp.com/health; then
+            echo "Service is down!"
+          else
+            echo "Service is healthy!"
+          fi
