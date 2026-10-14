@@ -42,3 +42,11 @@ OSS기반 SW프로그래밍 과제
 
 이번 학기에는 등록 → 발견 → 재생 → 저장 흐름이 동작하는 MVP를 완성하고, 90초 안에 핵심 기능을 시연하는 것을 목표로 합니다.
 
+<!-- DORA START -->
+## Weekly DORA Report
+
+- Lead Time: 0.05 hours
+- Deployment Frequency: 6 deployments/week
+- MTTR: N/A
+- Change Failure Rate: 0.0 %
+<!-- DORA END -->
