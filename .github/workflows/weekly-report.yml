@@ -47,7 +47,7 @@ jobs:
           lead_times = []
 
           for dep in deployments:
-              if dep["environment"] != "production":
+              if dep["environment"].lower() != "production":
                   continue
 
               statuses = api(
@@ -130,20 +130,28 @@ jobs:
             metrics.json
             weekly-report.md
 
+
       - name: Update README
         run: |
           python - <<'PY'
           from pathlib import Path
 
           path = Path("README.md")
-          content = path.read_text() if path.exists() else ""
-          report = Path("weekly-report.md").read_text()
+          content = path.read_text(encoding="utf-8") if path.exists() else ""
+          report = Path("weekly-report.md").read_text(encoding="utf-8")
 
-          marker = "## Weekly DORA Report"
-          if marker in content:
-              content = content.split(marker)[0].rstrip()
+          start = "<!-- DORA START -->"
+          end = "<!-- DORA END -->"
+          section = f"{start}\n{report.rstrip()}\n{end}"
 
-          path.write_text(content + "\n\n" + report)
+          if start in content and end in content:
+              before = content.split(start, 1)[0]
+              after = content.split(end, 1)[1]
+              content = before + section + after
+          else:
+              content = content.rstrip() + "\n\n" + section + "\n"
+
+          path.write_text(content, encoding="utf-8")
           PY
 
       - name: Commit README
@@ -155,3 +163,4 @@ jobs:
             git commit -m "Update weekly DORA report"
             git push
           fi
+

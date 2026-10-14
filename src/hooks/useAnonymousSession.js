@@ -17,3 +17,4 @@ export function useAnonymousSession() {
 
   return { user, loading, error };
 }
+
