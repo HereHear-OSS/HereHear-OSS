@@ -1,0 +1,157 @@
+name: Weekly DORA Report
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 1'
+
+permissions:
+  contents: write
+  deployments: read
+  issues: read
+
+jobs:
+  weekly-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Collect DORA Metrics
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import os, json, subprocess
+          from datetime import datetime, timedelta, timezone
+
+          def api(path):
+              result = subprocess.check_output(
+                  ["gh", "api", "--paginate", "--slurp", path],
+                  text=True
+              )
+              pages = json.loads(result)
+              return [item for page in pages for item in page]
+
+          def time(s):
+              return datetime.fromisoformat(s.replace("Z", "+00:00"))
+
+          end = datetime.now(timezone.utc)
+          start = end - timedelta(days=7)
+
+          repo = os.environ["GH_REPO"]
+          deployments = api(f"repos/{repo}/deployments?per_page=100")
+          successful = []
+          lead_times = []
+
+          for dep in deployments:
+              if dep["environment"] != "production":
+                  continue
+
+              statuses = api(
+                  f"repos/{repo}/deployments/{dep['id']}/statuses?per_page=100"
+              )
+              if not statuses or statuses[0]["state"] != "success":
+                  continue
+
+              deployed_at = time(statuses[0]["created_at"])
+              if not start <= deployed_at < end:
+                  continue
+
+              successful.append(dep)
+
+              commit = json.loads(subprocess.check_output(
+                  ["gh", "api", f"repos/{repo}/commits/{dep['sha']}"],
+                  text=True
+              ))
+              committed_at = time(commit["commit"]["committer"]["date"])
+              lead_times.append(
+                  (deployed_at - committed_at).total_seconds() / 3600
+              )
+
+          issues = api(
+              f"repos/{repo}/issues?state=all&labels=incident&per_page=100"
+          )
+          incidents = [
+              i for i in issues
+              if "pull_request" not in i
+              and i.get("closed_at")
+              and start <= time(i["closed_at"]) < end
+          ]
+
+          recovery = [
+              (time(i["closed_at"]) - time(i["created_at"])).total_seconds() / 3600
+              for i in incidents
+          ]
+
+          failed_ids = set()
+          for issue in incidents:
+              for dep in successful:
+                  if f"deployment:{dep['id']}" in (issue.get("body") or ""):
+                      failed_ids.add(dep["id"])
+
+          count = len(successful)
+          metrics = {
+              "period_start": start.isoformat(),
+              "period_end": end.isoformat(),
+              "lead_time_hours": round(sum(lead_times)/len(lead_times), 2) if lead_times else None,
+              "deployment_frequency": count,
+              "mttr_hours": round(sum(recovery)/len(recovery), 2) if recovery else None,
+              "change_failure_rate": round(len(failed_ids)/count*100, 2) if count else None
+          }
+
+          with open("metrics.json", "w") as f:
+              json.dump(metrics, f, indent=2)
+
+          def show(value, unit):
+              return f"{value} {unit}" if value is not None else "N/A"
+
+          report = f"""## Weekly DORA Report
+
+          - Lead Time: {show(metrics['lead_time_hours'], 'hours')}
+          - Deployment Frequency: {count} deployments/week
+          - MTTR: {show(metrics['mttr_hours'], 'hours')}
+          - Change Failure Rate: {show(metrics['change_failure_rate'], '%')}
+          """
+
+          with open("weekly-report.md", "w") as f:
+              f.write(report)
+
+          print(report)
+          PY
+
+      - name: Upload JSON and Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-dora-report
+          path: |
+            metrics.json
+            weekly-report.md
+
+      - name: Update README
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("README.md")
+          content = path.read_text() if path.exists() else ""
+          report = Path("weekly-report.md").read_text()
+
+          marker = "## Weekly DORA Report"
+          if marker in content:
+              content = content.split(marker)[0].rstrip()
+
+          path.write_text(content + "\n\n" + report)
+          PY
+
+      - name: Commit README
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Update weekly DORA report"
+            git push
+          fi
