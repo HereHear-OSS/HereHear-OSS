@@ -1,6 +1,6 @@
 import { toErrorMessage } from '../../constants/errors';
 
-/** code(ERROR_CODES) 또는 message 를 받아 화면 상단에 표시 */
+/** code(ERROR_CODES) 또는 message 를 받아 화면 상단에 표시시 */
 export default function ErrorBanner({ code, message, onRetry }) {
   if (!code && !message) return null;
   return (
