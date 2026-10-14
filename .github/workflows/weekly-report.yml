@@ -130,4 +130,37 @@ jobs:
             metrics.json
             weekly-report.md
 
- 
+
+      - name: Update README
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("README.md")
+          content = path.read_text(encoding="utf-8") if path.exists() else ""
+          report = Path("weekly-report.md").read_text(encoding="utf-8")
+
+          start = "<!-- DORA START -->"
+          end = "<!-- DORA END -->"
+          section = f"{start}\n{report.rstrip()}\n{end}"
+
+          if start in content and end in content:
+              before = content.split(start, 1)[0]
+              after = content.split(end, 1)[1]
+              content = before + section + after
+          else:
+              content = content.rstrip() + "\n\n" + section + "\n"
+
+          path.write_text(content, encoding="utf-8")
+          PY
+
+      - name: Commit README
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Update weekly DORA report"
+            git push
+          fi
+
