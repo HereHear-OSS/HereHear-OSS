@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Check Service
         run: |
-          if ! curl -f https://myapp.com/health; then
+          if ! curl -fL --max-time 15 https://here-hear-ot16p8c0o-tangtangcucu.vercel.app/; then
             echo "Service is down!"
           else
             echo "Service is healthy!"
