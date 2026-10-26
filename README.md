@@ -45,8 +45,8 @@ OSS기반 SW프로그래밍 과제
 <!-- DORA START -->
 ## Weekly DORA Report
 
-- Lead Time: 0.04 hours
-- Deployment Frequency: 7 deployments/week
+- Lead Time: 0.0 hours
+- Deployment Frequency: 1 deployments/week
 - MTTR: N/A
 - Change Failure Rate: 0.0 %
 <!-- DORA END -->
