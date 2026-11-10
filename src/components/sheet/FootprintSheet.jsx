@@ -17,10 +17,8 @@ import { ERROR_CODES } from '../../constants/errors';
  * TODO(10주): 상세 표시, 재생 버튼   TODO(11주): 좋아요 토글   TODO(12주): 즐겨찾기 토글
  * TODO(11주): 요청 중 버튼 잠금(중복 요청 방지), 실패 시 성공 표시 유지 금지
  */
-// eslint-disable-next-line no-unused-vars
 export default function FootprintSheet({
   footprint,
-  detail,
   playing,
   onPlay,
   onStop,
