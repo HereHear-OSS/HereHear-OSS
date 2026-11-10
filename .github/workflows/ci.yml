@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  lint-test-build:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,21 +28,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit tests
-        # Verbose output lists executed tests and keeps TODOs visible.
-        run: npm test -- --reporter=verbose
-
       - name: Build
         run: npm run build
-
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: E2E tests (Chromium)
-        run: npm run test:e2e -- --reporter=list
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -50,3 +37,65 @@ jobs:
           name: herehear-dist
           path: dist/
           if-no-files-found: error
+
+  test:
+    name: Test (${{ matrix.os }}, Node ${{ matrix.node }})
+    needs: build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ['22', '24']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: herehear-dist
+          path: dist/
+
+      - name: Verify build artifact
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            const html = fs.readFileSync("dist/index.html", "utf8");
+            assert.ok(html.includes("id=\"root\""), "Missing React root");
+            const assets = [...html.matchAll(/(?:src|href)="(\/assets\/[^\"]+)"/g)]
+              .map((match) => match[1]);
+            assert.ok(assets.some((asset) => asset.endsWith(".js")), "Missing JavaScript bundle reference");
+            assert.ok(assets.some((asset) => asset.endsWith(".css")), "Missing CSS bundle reference");
+            for (const asset of assets) {
+              const file = fs.statSync(`dist${asset}`);
+              assert.ok(file.isFile() && file.size > 0, `Invalid asset: ${asset}`);
+            }
+            console.log(`Build artifact verified: index.html and ${assets.length} referenced assets`);
+          '
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test -- --reporter=verbose
+
+      - name: Install Chromium
+        if: matrix.os == 'ubuntu-latest' && matrix.node == '24'
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests (Chromium)
+        if: matrix.os == 'ubuntu-latest' && matrix.node == '24'
+        run: npm run test:e2e -- --reporter=list
+
+  # A future deploy job can depend on both jobs with needs: [build, test].
