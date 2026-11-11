@@ -11,6 +11,72 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect deployment changes
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.detect.outputs.deploy }}
+      reason: ${{ steps.detect.outputs.reason }}
+    steps:
+      - name: Checkout history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed deployment files
+        id: detect
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          def git(*args):
+              return subprocess.check_output(["git", *args])
+
+          event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
+          eligible = (
+              os.environ["GITHUB_EVENT_NAME"] == "push"
+              and os.environ["GITHUB_REF"] == "refs/heads/feature/week7-8-cicd"
+          )
+          deploy = False
+          reason = "Skipped: only pushes to feature/week7-8-cicd can deploy (not PR or manual runs)."
+          if eligible:
+              head = event["after"]
+              base = event.get("before", "")
+              try:
+                  if not base or set(base) == {"0"}:
+                      # First push: compare branch changes against its default-branch ancestor.
+                      default = event["repository"]["default_branch"]
+                      base = git("merge-base", head, f"refs/remotes/origin/{default}").decode().strip()
+                  # Compare full push endpoints, including renames/deletions and all commits.
+                  files = git("diff", "--no-renames", "--name-only", "-z", base, head).decode().split("\0")
+                  exact = {"index.html", "package.json", "package-lock.json", ".env.example", ".npmrc", "vercel.json", ".vercelignore"}
+                  def deployment_file(path):
+                      return (
+                          path in exact
+                          or path.startswith(("src/", "public/", "supabase/", ".github/actions/"))
+                          or path == ".github/workflows/ci.yml"
+                          or path.startswith(("vite.config.", "vercel.config."))
+                      )
+                  count = sum(deployment_file(path) for path in files if path)
+                  deploy = count > 0
+                  reason = (
+                      f"Eligible: {count} deployment-related files changed; Build and all Matrix tests must pass."
+                      if deploy else "Skipped: no deployment-related changes (documentation/test/tooling-only changes)."
+                  )
+              except (subprocess.CalledProcessError, KeyError):
+                  # Force-pushed/unavailable history must not silently suppress an app deployment.
+                  deploy = True
+                  reason = "Eligible: comparison history unavailable; conservatively deploy after successful checks."
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"deploy={str(deploy).lower()}\nreason={reason}\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(f"### Preview change detection\n\n{reason}\n")
+          PY
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -91,8 +157,8 @@ jobs:
 
   deploy:
     name: Deploy Vercel Preview
-    needs: [build, test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/week7-8-cicd'
+    needs: [build, test, changes]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/week7-8-cicd' && needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -127,3 +193,28 @@ jobs:
             exit 1
           fi
           printf '### Vercel Preview — herehear-cicd-practice\n\n[Open Preview](%s)\n' "$deployment_url" >> "$GITHUB_STEP_SUMMARY"
+
+  deployment-summary:
+    name: Explain deployment result
+    needs: [changes, build, test, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record deployment decision
+        env:
+          CHANGE_RESULT: ${{ needs.changes.result }}
+          CHANGE_REASON: ${{ needs.changes.outputs.reason }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+        shell: bash
+        run: |
+          {
+            printf '### Preview deployment result\n\n'
+            printf 'Change detection: %s\n\n' "$CHANGE_RESULT"
+            printf '%s\n\n' "$CHANGE_REASON"
+            printf 'Build: %s; Test Matrix: %s; Deploy: %s\n\n' "$BUILD_RESULT" "$TEST_RESULT" "$DEPLOY_RESULT"
+            if [[ "$BUILD_RESULT" != success || "$TEST_RESULT" != success ]]; then
+              printf 'Deployment requires successful Build and every Test Matrix combination.\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
