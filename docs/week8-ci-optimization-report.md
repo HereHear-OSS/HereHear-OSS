@@ -1,5 +1,19 @@
 # 8주차 GitHub Actions 최적화 보고서
 
+## 제출 증빙 바로가기
+
+| 확인 항목 | 증빙 링크 |
+| --- | --- |
+| 메인 CI·변경 감지·조건부 Preview 배포 | [ci.yml](../.github/workflows/ci.yml) |
+| OS/Node Matrix·Reusable Workflow | [reusable-test.yml](../.github/workflows/reusable-test.yml) |
+| Composite Action·npm 캐시·의존성 설치 | [setup-project/action.yml](../.github/actions/setup-project/action.yml) |
+| Reusable Workflow 및 Preview 배포 성공 (`0d999b9`) | [Actions 성공 실행](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/43011240933) |
+| README만 변경한 조건부 배포 검증 (`4e2f428`) | [배포 생략 실행](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/43009568780) |
+| 캐시 적용 전후 비교 | [본문 9절: 관찰값·계산·측정 한계](#9-캐시-적용-전후-비교) |
+| 7주차 제출 문서 | [기본 CI/CD 구축 증빙](week7-submission.md) |
+
+캐시 비교는 Build Job **20초 → 15초**, `npm ci` **5초 → 3초**라는 사용자 관찰값이다. 캐시만의 인과효과로 단정하지 않으며, 측정값의 원본 로그를 이번 보고서에서 별도로 확보하지 않았다는 한계는 본문에 유지했다.
+
 - 프로젝트: HereHear-OSS
 - 작업 브랜치: `feature/week7-8-cicd`
 - 관련 PR: [#17](https://github.com/HereHear-OSS/HereHear-OSS/pull/17)
