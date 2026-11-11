@@ -50,3 +50,5 @@ OSS기반 SW프로그래밍 과제
 - MTTR: N/A
 - Change Failure Rate: N/A
 <!-- DORA END -->
+
+<!-- CI path-filter verification -->
