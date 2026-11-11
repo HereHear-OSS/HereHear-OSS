@@ -1,0 +1,21 @@
+name: Setup project
+description: Configure Node.js, restore the npm download cache, and install locked dependencies.
+
+inputs:
+  node-version:
+    description: Node.js version or version range passed to actions/setup-node.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js and npm cache
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+        cache-dependency-path: package-lock.json
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
