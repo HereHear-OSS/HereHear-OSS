@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
+    branches: [main, feature/week7-8-cicd]
   workflow_dispatch:
 
 permissions:
@@ -98,4 +98,41 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.node == '24'
         run: npm run test:e2e -- --reporter=list
 
-  # A future deploy job can depend on both jobs with needs: [build, test].
+  deploy:
+    name: Deploy Vercel Preview
+    needs: [build, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/week7-8-cicd'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      # Must identify the existing herehear-cicd-practice project.
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.22.1'
+          package-manager-cache: false
+
+      - name: Deploy Preview and record URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${VERCEL_TOKEN:?VERCEL_TOKEN secret is required}"
+          : "${VERCEL_ORG_ID:?VERCEL_ORG_ID variable is required}"
+          : "${VERCEL_PROJECT_ID:?VERCEL_PROJECT_ID variable is required}"
+          # Deploy source: Vercel builds using the linked project's Preview settings.
+          # The CI dist artifact is not Vercel Build Output API (.vercel/output).
+          npx --yes vercel@latest deploy --yes --target=preview --token "$VERCEL_TOKEN" > "$RUNNER_TEMP/vercel-preview-url.txt"
+          deployment_url=$(tr -d '\r\n' < "$RUNNER_TEMP/vercel-preview-url.txt")
+          if [[ ! "$deployment_url" =~ ^https://[a-zA-Z0-9.-]+\.vercel\.app/?$ ]]; then
+            echo "Vercel did not return a valid Preview deployment URL" >&2
+            exit 1
+          fi
+          printf '### Vercel Preview — herehear-cicd-practice\n\n[Open Preview](%s)\n' "$deployment_url" >> "$GITHUB_STEP_SUMMARY"
