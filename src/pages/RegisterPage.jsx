@@ -34,6 +34,7 @@ export default function RegisterPage() {
   return (
     <section className="page">
       <h2>현재 위치에 음악 남기기</h2>
+      <h2>다른 사람과 음악을 공유해보세요</h2>
       <LocationStatus position={position} status={status} errorCode={errorCode} />
       <RegisterForm onSubmit={handleSubmit} disabled={!usable.ok} errorCode={submitErrorCode} />
     </section>
