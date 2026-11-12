@@ -1,0 +1,26 @@
+# CODEOWNERS — 영역별 담당 리뷰어
+# 규칙: 아래로 갈수록 우선순위가 높습니다 (마지막으로 일치한 줄이 적용됨).
+
+# 기본 담당자 (모든 파일)
+*                           @somin1116
+
+# 프론트엔드 화면·컴포넌트 (지도, 발자국 마커, 바텀시트, 음악 재생 등)
+/src/                       @gyuhoo1129 @zmjiyam
+
+# Supabase 스키마·정책 (DB 변경은 반드시 확인)
+/supabase/                  @somin1116 @yuri473
+
+# E2E 테스트 / Playwright
+/tests/                     @o5jisu
+/playwright.config.js       @LEEJungGyeong
+
+# GitHub Actions, 템플릿, 협업 규칙
+/.github/                   @somin1116
+/CONTRIBUTING.md            @o5jisu
+/docs/                      @LEEJungGyeong @yuri473
+
+# 빌드·린트 설정
+/package.json               @somin1116
+/package-lock.json          @yuri473
+/vite.config.js             @yuri473
+/eslint.config.js           @tangtangcucu
