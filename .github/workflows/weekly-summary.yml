@@ -1,0 +1,60 @@
+name: Weekly Summary
+
+# 매주 월요일 오전 9시(KST)에 지난 7일의 이슈와 PR을 요약해 이슈로 올린다.
+on:
+  schedule:
+    - cron: '0 0 * * 1' # UTC 월요일 00:00 = KST 월요일 09:00
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const now = new Date();
+            const since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const day = (d) => d.toISOString().slice(0, 10);
+
+            const items = await github.paginate(github.rest.issues.listForRepo, {
+              ...context.repo,
+              state: 'all',
+              since: since.toISOString(),
+              per_page: 100,
+            });
+
+            const inRange = (t) => t && new Date(t) >= since;
+            const issues = items.filter((i) => !i.pull_request);
+            const prs = items.filter((i) => i.pull_request);
+
+            const opened = issues.filter((i) => inRange(i.created_at));
+            const closed = issues.filter((i) => inRange(i.closed_at));
+            const merged = prs.filter((p) => inRange(p.pull_request.merged_at));
+
+            const list = (arr) =>
+              arr.length ? arr.map((i) => `- #${i.number} ${i.title}`).join('\n') : '- 없음';
+
+            const body = [
+              `## 주간 요약 (${day(since)} ~ ${day(now)})`,
+              '',
+              `### 새로 열린 이슈 (${opened.length})`,
+              list(opened),
+              '',
+              `### 닫힌 이슈 (${closed.length})`,
+              list(closed),
+              '',
+              `### 병합된 PR (${merged.length})`,
+              list(merged),
+            ].join('\n');
+
+            await github.rest.issues.create({
+              ...context.repo,
+              title: `주간 요약 (${day(since)} ~ ${day(now)})`,
+              body,
+              labels: ['weekly-summary'],
+            });
