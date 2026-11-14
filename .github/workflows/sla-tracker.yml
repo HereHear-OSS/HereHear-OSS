@@ -1,0 +1,41 @@
+name: SLA Tracker
+
+# 48시간 넘게 댓글이 없는 열린 이슈에 sla-breached 라벨을 붙인다.
+on:
+  schedule:
+    - cron: '0 */6 * * *' # 6시간마다
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const SLA_HOURS = 48;
+            const LABEL = 'sla-breached';
+            const limit = Date.now() - SLA_HOURS * 60 * 60 * 1000;
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              ...context.repo,
+              state: 'open',
+              per_page: 100,
+            });
+
+            for (const issue of issues) {
+              if (issue.pull_request) continue; // PR 제외
+              if (issue.comments > 0) continue; // 이미 응답한 이슈 제외
+              if (issue.labels.some((l) => l.name === LABEL)) continue;
+              if (new Date(issue.created_at).getTime() > limit) continue;
+
+              await github.rest.issues.addLabels({
+                ...context.repo,
+                issue_number: issue.number,
+                labels: [LABEL],
+              });
+              core.info(`SLA 초과: #${issue.number} ${issue.title}`);
+            }
