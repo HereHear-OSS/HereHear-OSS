@@ -77,3 +77,12 @@ npm run dev
 - [Inner Source 도입 로드맵](docs/inner-source-roadmap.md)
 
 <!-- DORA START -->
+## Weekly DORA Report
+
+- Lead Time: N/A
+- Deployment Frequency: 0 deployments/week
+- MTTR: N/A
+- Change Failure Rate: N/A
+<!-- DORA END -->
+
+<!-- CI path-filter verification -->
