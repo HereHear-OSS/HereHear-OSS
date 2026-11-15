@@ -42,13 +42,35 @@ OSS기반 SW프로그래밍 과제
 
 이번 학기에는 등록 → 발견 → 재생 → 저장 흐름이 동작하는 MVP를 완성하고, 90초 안에 핵심 기능을 시연하는 것을 목표로 합니다.
 
+## 데모
+
+https://here-hear-oss.vercel.app
+
+## 기술 스택
+
+- React 18, Vite
+- Leaflet(react-leaflet) 지도
+- Supabase
+- 테스트: Vitest, Playwright / 린트: ESLint
+
+## 실행 방법
+
+```bash
+git clone https://github.com/HereHear-OSS/HereHear-OSS.git
+cd HereHear-OSS
+npm install
+cp .env.example .env   # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY 입력
+npm run dev
+```
+
+자세한 개발 환경과 명령어는 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
+
+## 기여하기
+
+기여는 언제나 환영합니다. [CONTRIBUTING.md](CONTRIBUTING.md)와 [행동 강령](CODE_OF_CONDUCT.md)을 먼저 읽어 주세요.
+
+## 라이선스
+
+이 프로젝트는 [MIT 라이선스](LICENSE)로 배포됩니다.
+
 <!-- DORA START -->
-## Weekly DORA Report
-
-- Lead Time: N/A
-- Deployment Frequency: 0 deployments/week
-- MTTR: N/A
-- Change Failure Rate: N/A
-<!-- DORA END -->
-
-<!-- CI path-filter verification -->
