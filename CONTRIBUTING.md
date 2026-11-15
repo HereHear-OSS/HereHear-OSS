@@ -2,6 +2,7 @@
 
 HereHear(위치 기반 음악 공유 서비스) 팀 프로젝트의 협업 규칙입니다.
 모든 변경은 **GitHub Flow**(브랜치 → PR → 리뷰 → 병합)를 따릅니다.
+참여하기 전에 [행동 강령](CODE_OF_CONDUCT.md)을 읽어 주세요.
 
 ## 1. 기본 원칙
 
@@ -98,3 +99,40 @@ chore(ci): weekly DORA report 워크플로우 수정
 - React + JavaScript 기준으로 작성합니다.
 - 컴포넌트 파일명은 PascalCase, 함수·변수는 camelCase를 사용합니다.
 
+## 10. 개발 환경 설정
+
+필요한 것: Node.js 20 이상, npm
+
+```bash
+git clone https://github.com/HereHear-OSS/HereHear-OSS.git
+cd HereHear-OSS
+npm install
+cp .env.example .env   # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY 입력
+npm run dev
+```
+
+| 명령어 | 설명 |
+| --- | --- |
+| `npm run dev` | 개발 서버 실행 |
+| `npm run build` | 프로덕션 빌드 |
+| `npm run preview` | 빌드 결과 미리보기 |
+| `npm run lint` | ESLint 검사 |
+| `npm test` | 단위 테스트(Vitest) |
+| `npm run test:e2e` | E2E 테스트(Playwright) |
+
+E2E 테스트를 처음 실행한다면 `npx playwright install`로 브라우저를 먼저 설치합니다.
+`.env`에는 공개되어도 되는 anon 키만 넣고 `service_role` 키는 넣지 않습니다.
+
+## 11. 외부 기여자 안내
+
+팀원이 아니어서 이 저장소에 쓰기 권한이 없다면 다음 순서로 참여해 주세요.
+
+1. 저장소를 **Fork** 합니다
+2. 이슈를 먼저 등록하거나 기존 이슈에 참여 의사를 남깁니다
+3. 포크에서 위 규칙대로 브랜치를 만들어 작업합니다
+4. 이 저장소의 `main`을 대상으로 PR을 올립니다
+
+## 12. 행동 강령과 라이선스
+
+- 모든 참여자는 [행동 강령](CODE_OF_CONDUCT.md)을 지켜야 합니다
+- 기여한 코드는 이 프로젝트의 [MIT 라이선스](LICENSE)를 따릅니다
