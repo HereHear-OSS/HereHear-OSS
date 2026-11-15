@@ -1,30 +1,33 @@
 # 8주차 GitHub Actions 최적화 보고서
 
-## 제출 증빙 바로가기
+## 제출 증빙 링크
 
 | 확인 항목 | 증빙 링크 |
 | --- | --- |
-| 메인 CI·변경 감지·조건부 Preview 배포 | [ci.yml](../.github/workflows/ci.yml) |
-| OS/Node Matrix·Reusable Workflow | [reusable-test.yml](../.github/workflows/reusable-test.yml) |
-| Composite Action·npm 캐시·의존성 설치 | [setup-project/action.yml](../.github/actions/setup-project/action.yml) |
+| 메인 CI·변경 감지·조건부 Preview 배포 | [ci.yml](https://github.com/HereHear-OSS/HereHear-OSS/blob/0d999b96faf8de5b19c08800c8de48be61d5cc5b/.github/workflows/ci.yml) |
+| OS/Node Matrix·Reusable Workflow | [reusable-test.yml](https://github.com/HereHear-OSS/HereHear-OSS/blob/0d999b96faf8de5b19c08800c8de48be61d5cc5b/.github/workflows/reusable-test.yml) |
+| Composite Action·npm 캐시·의존성 설치 | [setup-project/action.yml](https://github.com/HereHear-OSS/HereHear-OSS/blob/0d999b96faf8de5b19c08800c8de48be61d5cc5b/.github/actions/setup-project/action.yml) |
 | Reusable Workflow 및 Preview 배포 성공 (`0d999b9`) | [Actions 성공 실행](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/43011240933) |
 | README만 변경한 조건부 배포 검증 (`4e2f428`) | [배포 생략 실행](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/43009568780) |
-| 캐시 적용 전후 비교 | [본문 9절: 관찰값·계산·측정 한계](#9-캐시-적용-전후-비교) |
-| 7주차 제출 문서 | [기본 CI/CD 구축 증빙](week7-submission.md) |
+| 캐시 적용 전 | [실행 42978199840](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/42978199840) · [Build 로그](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/42978199840/job/130382134240) |
+| 캐시 최초 저장 | [실행 42985619210](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/42985619210) · [Build 로그](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/42985619210/job/130405955864) |
+| Cache Hit | [실행 43011240933](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/43011240933) · [Build 로그](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/43011240933/job/130491086188) |
+| 시간 비교와 측정 한계 | [9절 캐시 적용 전후 비교](#9-캐시-적용-전후-비교) |
+| 7주차 제출 문서 | [기본 CI/CD 구축 증빙 원문](https://github.com/HereHear-OSS/HereHear-OSS/blob/main/docs/week7-submission.md) |
 
-캐시 비교는 Build Job **20초 → 15초**, `npm ci` **5초 → 3초**라는 사용자 관찰값이다. 캐시만의 인과효과로 단정하지 않으며, 측정값의 원본 로그를 이번 보고서에서 별도로 확보하지 않았다는 한계는 본문에 유지했다.
+Build의 `npm ci` 로그 구간은 **3.27초 → 1.86초**로, 두 실행에서 **약 43.1% 감소**했다.
 
 - 프로젝트: HereHear-OSS
 - 작업 브랜치: `feature/week7-8-cicd`
 - 관련 PR: [#17](https://github.com/HereHear-OSS/HereHear-OSS/pull/17)
 - 작성일: 2026-11-11 (한국 시간)
-- 구현 확인 파일: [ci.yml](../.github/workflows/ci.yml), [reusable-test.yml](../.github/workflows/reusable-test.yml), [setup-project/action.yml](../.github/actions/setup-project/action.yml)
+- 구현 확인 파일: [ci.yml](https://github.com/HereHear-OSS/HereHear-OSS/blob/0d999b96faf8de5b19c08800c8de48be61d5cc5b/.github/workflows/ci.yml), [reusable-test.yml](https://github.com/HereHear-OSS/HereHear-OSS/blob/0d999b96faf8de5b19c08800c8de48be61d5cc5b/.github/workflows/reusable-test.yml), [setup-project/action.yml](https://github.com/HereHear-OSS/HereHear-OSS/blob/0d999b96faf8de5b19c08800c8de48be61d5cc5b/.github/actions/setup-project/action.yml)
 
 ## 1. 목적과 확인 범위
 
 7주차에 구축한 Build → Test Matrix → Vercel Preview 배포 흐름을 유지하면서 의존성 다운로드를 재사용하고, 중복 설정을 줄이며, 배포와 무관한 변경의 불필요한 Preview 배포를 생략하는 것이 목적이다. 테스트 범위를 줄여 실행 시간을 단축하는 방식은 적용하지 않았다.
 
-이 보고서는 현재 YAML의 실제 구현, GitHub Actions API에서 확인한 실행·job·step 결과, 사용자가 제공한 캐시 전후 관찰값을 구분해 작성했다. 캐시 비교값의 원본 로그 및 반복 측정 자료는 이번 작성 과정에서 별도로 확보하지 않았다.
+구현은 성공 실행의 커밋에 고정한 YAML에서 확인했다. 시간 비교에는 GitHub Actions Build job의 원본 로그 타임스탬프를 사용했다. 측정 방법과 비교 한계는 9절에 기록했다.
 
 ## 2. 전체 실행 구조
 
@@ -155,18 +158,26 @@ README, READ.md, 제안서, docs·보고서 등 위 패턴에 해당하지 않�
 
 ## 9. 캐시 적용 전후 비교
 
-아래 수치는 사용자가 관찰해 제공한 값이다. 이번 문서 작성 중 새로운 시간을 측정하거나 특정 run의 원본 로그와 다시 대조하지 않았다.
+| 구분 | 커밋 | CI 실행 | Build 로그에서 확인한 근거 |
+| --- | --- | --- | --- |
+| 캐시 적용 전 | `a501f4a7` | [42978199840](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/42978199840) | [Build](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/42978199840/job/130382134240)에서 Node 설정 후 `npm ci` 실행 |
+| 캐시 최초 저장 | `0c6c1a44` | [42985619210](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/42985619210) | [Build](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/42985619210/job/130405955864)의 `Post Set up Node.js`에서 `Cache saved with the key` |
+| Cache Hit | `0d999b96` | [43011240933](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/43011240933) | [Build](https://github.com/HereHear-OSS/HereHear-OSS/actions/runs/43011240933/job/130491086188)의 `Set up project`에서 `Cache hit for` 및 `Cache restored successfully` |
 
-| 측정 항목 | 캐시 적용 전 | Cache Hit 이후 | 관찰된 감소 | 감소율 |
-| --- | --- | --- | --- | --- |
-| Build Job 전체 | 20초 | 15초 | 5초 | 25% |
-| `npm ci` | 5초 | 3초 | 2초 | 40% |
+최초 저장과 복원에 사용한 주 캐시 키는 모두 `node-cache-Linux-x64-npm-59d67398f73ab492d93c495f4e321dfcb4f3b8c5d2f3f0bcce3778e1d58bc092`였다.
 
-감소율은 `(적용 전 - 적용 후) / 적용 전 × 100`으로 계산했다. `npm ci`는 Build Job에 포함되는 단계이므로 두 감소 시간을 합산하지 않는다.
+Ubuntu·Node 24.22.1 Build job에서 `Run npm ci` 시작부터 다음 `Run npm run build` 시작까지의 로그 타임스탬프 차이를 구했다. 이 구간에는 로그 출력과 다음 명령으로 전환하는 시간이 포함된다.
 
-관찰상 Cache Hit 이후 두 항목의 시간이 줄었으나, 캐시만의 인과효과로 단정할 수 없다. 러너 부하, 네트워크, Node/npm 버전, 작업 내용, setup-node와 캐시 복원·저장 시간 등의 차이가 영향을 줄 수 있다. 단일 관찰값으로 평균·중앙값·성공률·통계적 유의성을 제시하지 않는다. Build의 나머지 3초 차이를 캐시나 Composite/Reusable 효과로 임의 귀속하지 않는다.
+| 비교 대상 | 시작 UTC (2026-11-11) | 다음 Build 명령 시작 UTC | 관찰된 구간 |
+| --- | --- | --- | --- |
+| 캐시 적용 전 | `07:15:53.2034658` | `07:15:56.4723705` | 약 3.27초 |
+| Cache Hit | `11:21:24.5460234` | `11:21:26.4075127` | 약 1.86초 |
 
-향후에는 동일 소스·lockfile·실행 환경에서 cache miss와 hit를 구분해 여러 차례 측정하고, 설치 단계와 Build Job 전체 시간을 각각 비교해야 한다. Matrix 전체 소요 시간과 사용량, Vercel 빌드·배포 시간은 별도 지표로 측정해야 한다.
+관찰 차이는 약 1.41초이며, 표시한 초 단위 값으로 계산한 감소율은 `(3.27 - 1.86) / 3.27 × 100 ≈ 43.1%`이다. 최초 저장 실행은 캐시 키 생성 증빙으로 사용했다.
+
+서로 다른 커밋에서 한 번씩 실행한 결과다. 두 실행 사이에 Composite Action 등 워크플로 변경도 있었고 러너 부하와 네트워크 상태를 통제하지 않았으므로 캐시만의 기여도는 산출할 수 없다. 측정 범위는 `npm ci` 로그 구간이며 캐시 복원·저장 시간, Build Job 전체, Matrix 전체, Vercel 배포 시간은 별도 지표다. Build Job 전체의 최적화 전후 시간은 동일 기준으로 검증하지 않았다.
+
+동일 소스·lockfile·실행 환경에서 cache miss와 hit를 여러 차례 측정하면 설치 구간과 Build Job 전체 시간을 각각 비교할 수 있다.
 
 ## 10. 한계와 후속 확인 사항
 
@@ -177,6 +188,8 @@ README, READ.md, 제안서, docs·보고서 등 위 패턴에 해당하지 않�
 - E2E는 Supabase 없는 Vite 개발 서버의 입력 검증·라우팅을 대상으로 한다. 내려받은 `dist`의 브라우저 동작이나 실제 배포된 Preview의 Supabase 연동 검증은 아니다.
 - Vercel 배포는 `vercel@latest`를 사용하고 Matrix의 Node 22/24도 메이저 범위이므로 장기 비교 시 실제 해석 버전을 기록해야 한다.
 - 이 보고서는 Vercel 대시보드 설정·Secret 값·운영 환경·다른 프로젝트의 자동 배포 연결 상태를 직접 검증하지 않았다.
-- 커밋·실행 증빙 링크는 위 사례를 입증하지만 캐시 비교 수치의 원본 증빙을 대신하지 않는다. 후속 제출 시 Cache Hit 로그와 설치/Build 시간 화면을 별도로 보관하는 것이 필요하다.
+- 실행 로그는 GitHub Actions 보존 기간에 따라 열람이 제한될 수 있다. 9절에 측정에 사용한 타임스탬프와 캐시 메시지를 함께 기록했다.
 
-이번 보고서 작성에서는 CI/CD와 앱 코드를 수정하지 않았으며 새 workflow 실행, commit, push, merge를 수행하지 않았다.
+## 결과 요약
+
+Build와 네 Test Matrix 조합, Chromium E2E가 성공했다. 공통 준비 단계는 Composite Action으로, 테스트 job은 Reusable Workflow로 공통화했다. README만 바꾼 실행에서는 Preview 배포가 생략됐고, 배포 조건을 충족한 실행에서는 배포가 성공했다. 두 Build 실행의 `npm ci` 로그 구간에서 약 43.1% 감소를 관찰했다.
