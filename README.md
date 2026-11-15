@@ -73,4 +73,7 @@ npm run dev
 
 이 프로젝트는 [MIT 라이선스](LICENSE)로 배포됩니다.
 
+- [라이선스 비교와 선택 기준](docs/license-comparison.md)
+- [Inner Source 도입 로드맵](docs/inner-source-roadmap.md)
+
 <!-- DORA START -->
