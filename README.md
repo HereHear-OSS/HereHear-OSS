@@ -79,10 +79,10 @@ npm run dev
 <!-- DORA START -->
 ## Weekly DORA Report
 
-- Lead Time: N/A
-- Deployment Frequency: 0 deployments/week
+- Lead Time: 0.0 hours
+- Deployment Frequency: 12 deployments/week
 - MTTR: N/A
-- Change Failure Rate: N/A
+- Change Failure Rate: 0.0 %
 <!-- DORA END -->
 
 <!-- CI path-filter verification -->
