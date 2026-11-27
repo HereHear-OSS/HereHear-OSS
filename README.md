@@ -1,5 +1,6 @@
-# HereHear-OSS
-OSS기반 SW프로그래밍 과제
+# HereHear — 여행지에 남기는 음악 발자국
+
+OSS 기반 SW프로그래밍 학기 프로젝트 · 위치 기반 음악 공유 웹 서비스
 
 
 여행지의 추억을 음악으로 남기는 HereHear을 기획하며 웹 개발을 배우고 있습니다. 아이디어를 실제로 사용할 수 있는 서비스로 구현하는 것이 이번 학기의 목표입니다.
@@ -31,7 +32,7 @@ OSS기반 SW프로그래밍 과제
 | 발견 · 재생 | 지도 위 발자국 마커로 음악을 발견하고, 반경 안에서 메시지를 확인하고 음악을 듣습니다. |
 | 추억 저장 | 좋아요로 공감하고 즐겨찾기로 다시 확인할 음악을 저장합니다. |
 
-현재 단계 : 프로젝트 제안서와 16주 개발 마일스톤 초안 작성. 구현 정책과 기술 선택을 검토하고 있습니다.
+프로젝트 기획과 개발 마일스톤은 [프로젝트 제안서](HereHear_프로젝트_제안서.md)를 참고하세요.
 
 
 ## 학습 기록 계획
@@ -59,11 +60,80 @@ https://here-hear-oss.vercel.app
 git clone https://github.com/HereHear-OSS/HereHear-OSS.git
 cd HereHear-OSS
 npm install
-cp .env.example .env   # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY 입력
-npm run dev
+```
+
+`.env.example`을 복사해 `.env`를 만듭니다.
+
+```powershell
+# Windows PowerShell
+Copy-Item .env.example .env
+```
+
+```bash
+# macOS / Linux / Git Bash
+cp .env.example .env
+```
+
+아래 Supabase 준비를 마친 뒤 개발 서버를 실행합니다.
+
+```bash
+npm run dev              # http://localhost:5173
+```
+
+위치(Geolocation) 기능은 HTTPS 또는 localhost에서만 동작합니다.
+
+### Supabase 준비
+
+1. Supabase 프로젝트를 생성하고 Authentication > Providers에서 **Anonymous sign-ins**를 켭니다.
+2. SQL Editor에서 `supabase/migrations/0001_init.sql`을 실행한 뒤 `supabase/seed.sql`을 실행합니다.
+3. 프로젝트의 URL과 anon key를 `.env`의 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`에 입력합니다. `service_role` 키는 사용하지 않습니다.
+
+### 테스트 및 빌드
+
+```bash
+npm test                 # 단위 테스트 (Vitest)
+npm run lint             # ESLint 검사
+npx playwright install   # E2E 테스트용 브라우저 최초 설치
+npm run test:e2e         # 사용자 흐름 테스트 (Playwright)
+npm run build            # 배포용 빌드
 ```
 
 자세한 개발 환경과 명령어는 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
+
+## 폴더 구조
+
+```
+src/
+├─ constants/    policy.js(정책 상수) · errors.js(에러 코드/메시지)
+├─ lib/          geo.js(거리) · location.js(위치 유효성) · validators.js · supabaseClient.js
+├─ services/     authService · footprintService · reactionService  (Supabase RPC 호출)
+├─ hooks/        useGeolocation · useAnonymousSession · useFootprints · useAudioPlayer
+├─ data/         songCatalog.js (허용 음원 목록)
+├─ components/   common · map · sheet · register · saved
+├─ pages/        MapPage(발견) · RegisterPage(등록) · SavedPage(저장)
+└─ styles/       index.css
+supabase/        migrations/0001_init.sql · seed.sql
+tests/e2e/       Playwright 시나리오
+```
+
+## 주차별 개발 계획
+
+| 주차 | 파일 |
+| --- | --- |
+| 5주 | `supabase/migrations`, `authService`, `get_footprint_markers` 로 두 세션 공유 확인 |
+| 6주 | `lib/geo.js`(Haversine), `useGeolocation`, `LocationStatus`, `geo.test.js`, `location.test.js` |
+| 7주 | `RegisterForm`, `RegisterPage`, SQL `create_footprint` (검증·등록) |
+| 8주 | SQL `create_footprint` 의 곡별 락 + 중복 차단, 에러 코드 변환 |
+| 9주 | `useFootprints`, `FootprintMarker`, `MapView` (활성/비활성 표시) |
+| 10주 | `FootprintSheet`, `useAudioPlayer`, SQL `get_footprint_detail` |
+| 11주 | `toggle_like`, `reactionService`, 중복 요청 방지 |
+| 12주 | `toggle_favorite`, `get_my_favorites`, `SavedPage`, `SavedList` |
+| 13주 | `constants/errors.js` 기반 오류 처리 전반 |
+| 14주 | `tests/e2e/flow.spec.js` |
+
+## 구현 정책
+
+`src/constants/policy.js` 와 SQL 함수의 숫자를 항상 동일하게 유지한다.
 
 ## 기여하기
 
@@ -84,5 +154,3 @@ npm run dev
 - MTTR: N/A
 - Change Failure Rate: N/A
 <!-- DORA END -->
-
-<!-- CI path-filter verification -->
